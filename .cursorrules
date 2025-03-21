@@ -532,3 +532,60 @@ my-next-app/
 
 以上の指示に従い、確実で質の高い実装を行います。指示された範囲内でのみ処理を行い、不要な追加実装は行いません。不明点や重要な判断が必要な場合は、必ず確認を取ります。
 
+# ロギング規約
+
+## 基本方針
+- ロギングは `src/lib/logger` で一元管理
+- 全てのログは適切なログレベルで出力
+- エラーの詳細情報は必ずログに残す
+- 個人情報など機密データのログ出力は禁止
+
+## ログレベル
+```typescript
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+```
+
+- debug: 開発時のデバッグ情報
+- info: 通常の操作ログ
+- warn: 警告（エラーではないが注意が必要）
+- error: エラー（システムの異常や例外）
+
+## ロガーインターフェース
+```typescript
+interface Logger {
+  debug(message: string, ...args: unknown[]): void
+  info(message: string, ...args: unknown[]): void
+  warn(message: string, ...args: unknown[]): void
+  error(message: string, ...args: unknown[]): void
+}
+```
+
+## 使用方法
+```typescript
+import { logger } from '@/lib/logger'
+
+// 基本的な使用方法
+logger.info('Operation completed')
+
+// コンテキスト情報付きのログ
+logger.info('User action', { userId: '123', action: 'login' })
+
+// エラーログ
+try {
+  // 処理
+} catch (error) {
+  logger.error('Operation failed', { error })
+}
+```
+
+## 実装規則
+1. ログメッセージは英語で記述
+2. エラーログには必ずエラーオブジェクトを含める
+3. 機密情報（パスワード、トークンなど）は決してログに出力しない
+4. パフォーマンスに影響を与えないよう、適切なログレベルを使用
+
+## ログ出力場所
+- APIエンドポイント: リクエスト/レスポンスの主要な情報
+- リポジトリ層: データベース操作の結果
+- エラーハンドリング: 例外やエラーの詳細
+

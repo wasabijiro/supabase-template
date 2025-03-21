@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/api/client"
+import { logger } from "@/lib/logger"
 import { useState } from "react"
 
 export function GoogleLoginButton() {
@@ -10,6 +11,8 @@ export function GoogleLoginButton() {
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true)
+      logger.info('Initiating Google OAuth login')
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -18,10 +21,11 @@ export function GoogleLoginButton() {
       })
 
       if (error) {
+        logger.error('Google OAuth login failed', { error })
         throw error
       }
     } catch (error) {
-      console.error('Error:', error)
+      logger.error('Unexpected error during login', { error })
     } finally {
       setIsLoading(false)
     }

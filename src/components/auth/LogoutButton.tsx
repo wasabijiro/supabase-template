@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/api/client"
+import { logger } from "@/lib/logger"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
@@ -12,16 +13,18 @@ export function LogoutButton() {
   const handleSignOut = async () => {
     try {
       setIsLoading(true)
+      logger.info('Initiating sign out')
+      
       const { error } = await supabase.auth.signOut()
       if (error) {
-        console.error('Logout Error:', error)
+        logger.error('Sign out failed', { error })
+      } else {
+        logger.info('Sign out successful')
+        router.push('/')
+        router.refresh()
       }
-
-      router.push('/')
-      router.refresh()
-
     } catch (error) {
-      console.error('Error:', error)
+      logger.error('Unexpected error during sign out', { error })
     } finally {
       setIsLoading(false)
     }
