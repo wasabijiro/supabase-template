@@ -326,6 +326,17 @@ TypeScriptでのコーディングにおける一般的なベストプラクテ�
 
 # 技術スタック
 
+## パッケージマネージャー
+- Bun: ^1.0.0
+
+## パッケージ管理のルール
+- パッケージのインストールには `bun add` を使用する
+- `npm install` や `yarn add` は使用禁止
+- スクリプト実行は `bun run` を使用する
+  - 開発サーバー起動: `bun run dev`
+  - ビルド: `bun run build`
+  - テスト: `bun run test`
+
 ## コア技術
 - TypeScript: ^5.0.0
 - Node.js: ^20.0.0
@@ -336,6 +347,45 @@ TypeScriptでのコーディングにおける一般的なベストプラクテ�
 - ESLint: ^9.0.0
 - Prettier: ^8.0.0
 - vitest: ^3.0.0
+- @supabase/supabase-js: ^2.49.1
+
+# UI コンポーネント管理
+
+## shadcn/ui の利用
+
+### components.json
+- プロジェクトのコンポーネント設定を管理する中心的なファイル
+- 以下の設定を含む：
+  - スタイル設定（style, baseColor, cssVariables）
+  - コンポーネントのエイリアス設定
+  - TypeScript設定（tsx: true）
+  - アイコンライブラリの設定
+
+### コンポーネントの追加
+- コンポーネントの追加は以下のコマンドを使用する：
+```bash
+npx shadcn@latest add [component-name]
+```
+- 追加したコンポーネントは `components/ui` に配置される
+- カスタマイズが必要な場合は、追加後のコンポーネントを編集する
+
+### スタイルユーティリティ
+- `@/lib/utils/tailwindHelpers.ts` にある `cn` 関数を使用する
+- 使用方法：
+```typescript
+import { cn } from "@/lib/utils/tailwindHelpers"
+
+// クラス名の結合
+cn("base-class", {
+  "conditional-class": condition,
+  "another-class": true
+})
+```
+
+### コンポーネント構成
+- `components/ui/` ディレクトリは shadcn/ui コンポーネントをベースとする
+- カスタムコンポーネントを作成する場合は、既存の shadcn コンポーネントを拡張する
+- コンポーネントの変更は慎重に行い、デザインシステムの一貫性を維持する
 
 # API バージョン管理
 ## 重要な制約事項
@@ -350,6 +400,78 @@ TypeScriptでのコーディングにおける一般的なベストプラクテ�
 - AIモデルのバージョンは client.ts でのみ定義
 - 型定義は必ず types.ts を参照
 - 環境変数の利用は config.ts 経由のみ許可
+
+# データベース管理
+
+## Supabase
+- データベースとしてSupabaseを使用する
+- バージョン: ^2.49.1
+
+### 基本原則
+- Supabaseの操作はすべてCLIを通じて行う
+- マイグレーションファイルは `migrations/` ディレクトリで管理する
+- データベースの変更は必ずマイグレーションファイルを作成する
+
+### CLIコマンド（Makefile）
+```bash
+# Supabase CLIの主要コマンド
+make supabase-login      # Supabaseにログイン
+make supabase-start      # ローカル環境のSupabaseを起動
+make supabase-stop       # ローカル環境のSupabaseを停止（バックアップなし）
+make supabase-reset      # データベースをリセット（開発環境のみ使用）
+make supabase-pull       # リモートの設定をローカルに取り込む
+make supabase-push       # ローカルの設定をリモートに反映
+
+# マイグレーション関連
+make supabase-migration-new    # 新しいマイグレーションファイルを作成
+make supabase-migration-list   # マイグレーションの一覧を表示
+
+# プロジェクト管理
+make supabase-link            # リモートプロジェクトとの紐付け
+make supabase-status         # 現在の状態を確認
+```
+
+### ファイル構成
+- `src/lib/api/client.ts`
+  - Supabaseクライアントの初期化
+  - クライアントインスタンスの一元管理
+  - データベース操作の共通関数を定義
+
+- `src/lib/api/config.ts`
+  - Supabase接続情報の管理
+  - 環境変数の型安全な管理
+  - プロジェクト設定の一元管理
+
+- `src/lib/api/types.ts`
+  - Supabaseのレスポンス型定義
+  - テーブルの型定義
+  - 共通型の定義
+
+### データベース更新フロー
+1. 新しいマイグレーションファイルの作成
+  ```bash
+    make supabase-migration-new
+  ```
+
+2. マイグレーションファイルの編集
+  - `migrations/` ディレクトリ内のSQLファイルを編集
+  - テーブル定義やインデックスの追加など
+
+3. ローカルでの動作確認
+  ```bash
+    make supabase-reset  # DBをリセット
+    make supabase-push   # 変更を適用
+  ```
+
+4. リモート環境への適用
+  - プルリクエストを作成
+  - レビュー後、本番環境に適用
+
+### 注意事項
+- 本番環境のデータベースは直接操作禁止
+- マイグレーションは必ずローカルでテスト
+- 破壊的変更は事前に影響範囲を確認
+- 大規模なスキーマ変更は段階的に実施
 
 ---
 
@@ -377,10 +499,10 @@ my-next-app/
 ```
 
 ### 配置ルール
-- UIコンポーネント → `app/components/ui/`
-- APIエンドポイント → `app/api/[endpoint]/route.ts`
-- 共通処理 → `app/lib/utils/`
-- API関連処理 → `app/lib/api/`
+- UIコンポーネント → `src/components/ui/`
+- APIエンドポイント → `src/app/api/[endpoint]/route.ts`
+- 共通処理 → `src/lib/utils/`
+- API関連処理 → `src/lib/api/`
 
 ---
 
@@ -409,3 +531,4 @@ my-next-app/
 
 
 以上の指示に従い、確実で質の高い実装を行います。指示された範囲内でのみ処理を行い、不要な追加実装は行いません。不明点や重要な判断が必要な場合は、必ず確認を取ります。
+
