@@ -9,8 +9,18 @@ const supabaseRepository = new SupabaseRepository(supabase)
 /**
  * Get profile by userId
  * @route GET /api/profile
- * @param userId - The ID of the user whose profile to retrieve
- * @returns Profile data or error response
+ * @auth Not Required
+ * @param {string} userId - Query parameter for the user ID to retrieve
+ *   - Format: /api/profile?userId=xxx
+ *   - Required: Yes
+ * @returns {Object} Profile data or error
+ *   - id {string} User's unique identifier
+ *   - displayName {string|null} User's display name
+ *   - avatarUrl {string|null} User's avatar URL
+ * @error
+ *   - 400: Bad Request - Missing userId parameter
+ *   - 404: Not Found - Profile not found
+ *   - 500: Internal Server Error - Database or unexpected errors
  */
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     logger.info('Fetching profile', { userId })
-    const result = await supabaseRepository.findProfileById(userId)
+    const result = await supabaseRepository.findProfileById({ userId })
 
     return result.match(
       (profile) => {

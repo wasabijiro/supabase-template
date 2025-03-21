@@ -19,11 +19,6 @@ type ProfileResponse = {
 }
 ```
 
-#### エラーレスポンス
-- 401: 未認証
-- 404: プロフィールが存在しない
-- 500: サーバーエラー
-
 ### プロフィール更新
 ```typescript
 PUT /api/profile/update
@@ -47,9 +42,3 @@ type ProfileResponse = {
   success: boolean
 }
 ```
-
-#### エラーレスポンス
-- 401: 未認証
-- 404: プロフィールが存在しない
-- 422: バリデーションエラー
-- 500: サーバーエラー

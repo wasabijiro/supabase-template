@@ -1,5 +1,4 @@
-import { Result } from 'neverthrow'
-import { ApiError } from './error'
+import { ProfileModel } from "./models"
 
 export type ProfileId = string
 
@@ -9,8 +8,10 @@ export interface Profile {
   avatarUrl: string | null
 }
 
-// Repository interface
-export interface DbRepository {
-  findProfileById(id: ProfileId): Promise<Result<Profile, ApiError>>
-  updateProfile(id: ProfileId, data: Partial<Profile>): Promise<Result<boolean, ApiError>>
+export function profileModelToDomain(model: ProfileModel): Profile {
+  return {
+    id: model.id,
+    displayName: model.display_name,
+    avatarUrl: model.avatar_url
+  }
 }

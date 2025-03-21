@@ -11,21 +11,30 @@ export function GoogleLoginButton() {
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true)
-      logger.info('Initiating Google OAuth login')
-      
+      logger.info('[Auth] Starting Google OAuth login')
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       })
 
       if (error) {
-        logger.error('Google OAuth login failed', { error })
+        logger.error('[Auth] Google OAuth initialization failed', { 
+          error: error.message,
+          code: error.code
+        })
         throw error
       }
+
+      logger.info('[Auth] Redirecting to Google OAuth')
     } catch (error) {
-      logger.error('Unexpected error during login', { error })
+      logger.error('[Auth] Login process failed', { error })
     } finally {
       setIsLoading(false)
     }
