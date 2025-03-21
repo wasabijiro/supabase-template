@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ChangeEvent } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger'
 import { Profile } from '@/lib/api/domain'
 import { profileApi } from '@/lib/api/client/profile'
 import { ProfileAvatar } from "@/components/view/ProfileAvatar"
+import { createFilePreview, revokeFilePreview } from '@/lib/utils/file'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -40,10 +42,11 @@ export default function ProfilePage() {
       setLoading(true)
       await profileApi.update({
         displayName,
-        avatarUrl
+        avatarFile: avatarFile || undefined
       })
       logger.info('Profile updated successfully')
       setIsEditing(false)
+      setAvatarFile(null)
       await fetchProfile()
     } catch (error) {
       logger.error('Error updating profile', { error })
@@ -51,6 +54,23 @@ export default function ProfilePage() {
       setLoading(false)
     }
   }
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const { previewUrl } = createFilePreview(file)
+      setAvatarFile(file)
+      setAvatarUrl(previewUrl)
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (avatarUrl && avatarFile) {
+        revokeFilePreview(avatarUrl)
+      }
+    }
+  }, [avatarUrl, avatarFile])
 
   if (!user) {
     return <div>ログインしてください</div>
@@ -67,11 +87,20 @@ export default function ProfilePage() {
             <div className="space-y-4">
               {isEditing ? (
                 <>
-                  <ProfileAvatar
-                    avatarUrl={avatarUrl}
-                    isEditing={true}
-                    onAvatarChange={setAvatarUrl}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">アバター画像</label>
+                    <div className="flex items-center gap-4">
+                      <ProfileAvatar
+                        avatarUrl={avatarUrl}
+                      />
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">表示名</label>
                     <Input
@@ -86,7 +115,13 @@ export default function ProfilePage() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setIsEditing(false)}
+                      onClick={() => {
+                        setIsEditing(false)
+                        setAvatarFile(null)
+                        if (profile) {
+                          setAvatarUrl(profile.avatarUrl || '')
+                        }
+                      }}
                       disabled={loading}
                     >
                       キャンセル
@@ -98,7 +133,6 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-4">
                     <ProfileAvatar
                       avatarUrl={profile.avatarUrl || ''}
-                      isEditing={false}
                     />
                     <div>
                       <p className="text-sm font-medium">表示名</p>

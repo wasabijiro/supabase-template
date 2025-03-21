@@ -11,6 +11,7 @@ import {
   UpdateProfileResponse,
 } from './types'
 import { profileModelToDomain } from './domain'
+import { uploadAvatar } from './storage'
 
 export class SupabaseRepository implements DbRepository {
   constructor(private readonly client: SupabaseClient) {}
@@ -61,13 +62,38 @@ export class SupabaseRepository implements DbRepository {
 
       logger.info('Updating profile', { userId: user.id })
 
+      // Prepare update data
+      const updateData: {
+        display_name?: string | null
+        avatar_url?: string | null
+        updated_at: string
+      } = {
+        updated_at: new Date().toISOString()
+      }
+
+      // Set display_name if provided
+      if ('display_name' in request) {
+        updateData.display_name = request.display_name
+      }
+
+      // Handle avatar upload if file exists
+      if (request.avatar_file) {
+        const uploadResult = await uploadAvatar(this.client, {
+          file: request.avatar_file,
+          userId: user.id
+        })
+
+        if (uploadResult.isErr()) {
+          return err(uploadResult.error)
+        }
+
+        updateData.avatar_url = uploadResult.value
+      }
+
+      // Update profile with new data
       const { data, error } = await this.client
         .from('profiles')
-        .update({
-          display_name: request.display_name,
-          avatar_url: request.avatar_url,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', user.id)
         .select()
         .single()

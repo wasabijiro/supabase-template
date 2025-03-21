@@ -35,3 +35,8 @@ supabase-migration-list:
 .PHONY: supabase-link
 supabase-link:
 	$(MAKE) -C $(SUPABASE_DIR) supabase-link
+
+.PHONY: supabase-reset-push
+supabase-reset-push:
+	$(MAKE) supabase-reset
+	$(MAKE) supabase-push

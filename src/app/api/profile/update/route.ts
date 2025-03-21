@@ -3,7 +3,6 @@ import { createAuthenticatedClient } from '@/lib/api/client'
 import { SupabaseRepository } from '@/lib/api/adapters'
 import { ApiError } from '@/lib/api/error'
 import { logger } from '@/lib/logger'
-import { isValidUpdateProfileRequest } from '@/lib/api/types'
 import { extractBearerToken } from '@/lib/api/auth'
 
 /**
@@ -16,7 +15,7 @@ import { extractBearerToken } from '@/lib/api/auth'
  * @param request - Request with profile data and authorization header
  * @body {Object} request.body
  *   - display_name {string|null} Optional display name
- *   - avatar_url {string|null} Optional avatar URL
+ *   - avatar_file {File|null} Optional avatar file
  * @returns {Object} Success response or error
  *   - success: true with updated profile data
  *   - 401: Unauthorized - Missing or invalid token
@@ -26,7 +25,6 @@ import { extractBearerToken } from '@/lib/api/auth'
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Extract token from header
     const tokenResult = extractBearerToken(request.headers.get('authorization'))
     if (tokenResult.isErr()) {
       return NextResponse.json(
@@ -35,19 +33,19 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // FormDataを解析
+    const formData = await request.formData()
+    const display_name = formData.get('display_name')?.toString() || null
+    const avatar_file = formData.get('avatar_file') as File | null
+
+    const body = {
+      display_name,
+      avatar_file
+    }
+
     // Create authenticated client
     const authenticatedClient = createAuthenticatedClient(tokenResult.value)
     const repository = new SupabaseRepository(authenticatedClient)
-
-    // Validate request body
-    const body = await request.json()
-    if (!isValidUpdateProfileRequest(body)) {
-      logger.warn('Invalid update profile request', { body })
-      return NextResponse.json(
-        { error: 'Invalid request body' },
-        { status: 400 }
-      )
-    }
 
     // Update profile
     logger.info('Processing profile update request')

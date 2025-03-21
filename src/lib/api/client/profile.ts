@@ -4,7 +4,7 @@ import { getAuthSession } from '@/lib/api/client/session'
 
 export interface UpdateProfileParams {
   displayName: string
-  avatarUrl: string
+  avatarFile?: File
 }
 
 export const profileApi = {
@@ -26,17 +26,24 @@ export const profileApi = {
   async update(params: UpdateProfileParams): Promise<void> {
     try {
       const session = await getAuthSession()
+      const formData = new FormData()
+
+      // Add display name if provided
+      formData.append('display_name', params.displayName)
+
+      // Add avatar file if provided
+      if (params.avatarFile) {
+        formData.append('avatar_file', params.avatarFile)
+      }
+
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({
-          display_name: params.displayName,
-          avatar_url: params.avatarUrl
-        })
+        body: formData
       })
+
       const data = await response.json()
       if (!response.ok) {
         logger.error('Failed to update profile', { error: data.error })

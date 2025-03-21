@@ -9,15 +9,9 @@ export type GetProfileByIdResponse = Profile
 // `PUT /api/profile/update`
 export interface UpdateProfileRequest {
   display_name?: string | null
-  avatar_url?: string | null
+  avatar_file?: File | null
 }
 export interface UpdateProfileResponse {
   success: boolean
   profile: Profile
-}
-export function isValidUpdateProfileRequest(request: UpdateProfileRequest): boolean {
-  if (request.display_name || request.avatar_url) {
-    return true
-  }
-  return false
 }
